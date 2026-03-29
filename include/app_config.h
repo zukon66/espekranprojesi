@@ -13,5 +13,5 @@ constexpr gpio_num_t kWakeButtonPin = GPIO_NUM_33;
 constexpr int kDPadAdcPin = 34;
 
 constexpr char kDeviceName[] = "ESPekran-01";
-constexpr char kFirmwareVersion[] = "0.1.0";
+constexpr char kFirmwareVersion[] = "0.2.0";
 }  // namespace AppConfig

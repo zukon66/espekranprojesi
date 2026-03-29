@@ -1,41 +1,142 @@
-# ESP32 Smart Communicator & Mini Console
+# ESPekran Firmware Skeleton
 
-Bu proje, ESP32 mikrodenetleyicisi üzerine inşa edilmiş, hem bir mesh mesajlaşma cihazı hem de retro/çok oyunculu bir mini el konsolu olarak tasarlanmış hibrit bir akıllı cihazdır. 
+ESPekran, gelecekte ESP32 tabanli bir haberlesme cihazi ve mini el konsolu olmasi hedeflenen bir firmware prototipidir. Bu repo su anda gercek donanim suruculeri iceren tamamlanmis bir urun degil; katmanli, testlenebilir bir yazilim iskeleti ve yazilim simulesi sunar.
 
-## 📌 Proje Özeti
-Cihaz, dokunmatik ekranın hızı ile fiziksel butonların (D-Pad) ergonomisini birleştirir. NRF modülü üzerinden kendi kapalı ağı (Mesh Network) içinde mesajlaşma ve çok oyunculu oyun imkanı sunarken, Wi-Fi ve Bluetooth yetenekleriyle günlük bir asistan (hava durumu, saat, kablosuz hoparlör) görevi de görür.
+## Proje Durumu
+- Son README Sync: 2026-03-29
+- Last sync commit: `dcd486b`
+- Milestone progress: `4/8 (~50%)`
 
-## 🛠️ Donanım Bileşenleri
-* *Mikrodenetleyici:* ESP32 (Tüm sistemin beyni, Wi-Fi ve BT Classic/BLE desteği)
-* *Ekran:* 2.8 inç ILI9341 TFT LCD (240x320 Çözünürlük, SPI)
-* *Dokunmatik Panel:* XPT2046 (Ekranla entegre, SPI)
-* *Haberleşme Modülü:* NRF24L01 (Mesh ağı, eşler arası mesajlaşma ve oyun verisi, SPI)
-* *Depolama:* MicroSD Kart Modülü (Medya, arayüz ikonları ve oyun verileri için, SPI)
-* *Ses Sistemi:* Mini Amfi (Örn. PAM8403) ve 2 adet Laptop Hoparlörü (ESP32 I2S/DAC çıkışı ile)
-* *Fiziksel Kontrolcüler:* 6 Adet Push Buton (Yukarı, Aşağı, Sağ, Sol, Seç/OK, Uyku/Uyanma)
+### En son yapilanlar
+- Yapildi: Tek dosyali `main.cpp` yapisi katmanli mimariye ayrildi.
+- Yapildi: `app/core`, `ui`, `input`, `transport`, `storage`, `power` ve `board/hal` sinirlari olusturuldu.
+- Yapildi: `Display`, `Input`, `RadioTransport`, `Storage`, `Clock` ve `PowerManager` arayuzleri eklendi.
+- Yapildi: Host tarafinda calisabilen native test ortami eklendi.
+- Yapildi: UI state transitions ve mock radio queue davranisi icin test kaynaklari eklendi.
+- Guncellendi: README, yazilimda dogrulanan kisimlari ve donanimda dogrulanmayan kisimlari ayiracak sekilde duzeltildi.
 
-## 🏗️ Donanım ve Pin Mimarisi Stratejisi
-ESP32'nin kısıtlı pin sayısını optimize etmek için aşağıdaki yöntemler kullanılmıştır:
-* *Ortak SPI Veriyolu:* Ekran, Dokunmatik Panel, SD Kart ve NRF modülü aynı SPI hattını (MOSI, MISO, SCK) paylaşır. Her modül kendi özel CS (Chip Select) pini ile yönetilir.
-* *Analog D-Pad (Direnç Merdiveni):* 5 adet yön ve seçim tuşu, farklı değerlerdeki dirençlerle tek bir hatta bağlanarak ESP32'nin tek bir Analog (ADC) pininden okunur.
-* *Güç Tasarrufu (Deep Sleep):* Uyku tuşu, cihazı uyandırmak için özel olarak RTC destekli bir pine (Örn. GPIO32/33) bağlanmıştır.
+### Su an uzerinde calisilan
+- Yazilim mimarisini gercek TFT, touch, NRF24L01, SD ve power entegrasyonuna hazir tutmak.
+- Mock adapter'lari gercek driver'lara gecis yapilabilecek sinirlar olarak korumak.
 
-## 💻 Yazılım ve Arayüz (UI/UX) Özellikleri
-Arayüz, LVGL veya TFT_eSPI kütüphaneleri kullanılarak modern bir "işletim sistemi" hissiyatıyla tasarlanmıştır. Cihaz ses kontrolünü fiziksel tuşlardan değil, doğrudan yazılım arayüzünden sağlar.
+### Sonraki adim
+- `Display` arayuzune ilk gercek TFT adapter'ini baglamak.
+- `Input` arayuzune D-Pad veya touch icin ilk donanim adapter'ini eklemek.
+- `RadioTransport` arayuzune NRF24L01 tabanli ilk surucuyu baglamak.
 
-*Daima Açık Durum Çubuğu (Status Bar)*
-* Saat, Wi-Fi, Bluetooth ve NRF bağlantı durumu, mini hava durumu ikonu.
+## Mimari Ozet
+Repo iki ana bolume ayrilir:
 
-*Ana Uygulamalar ve Menüler*
-* *💬 Mesajlaşma:* Balon tasarımlı sohbet geçmişi ve dokunmatik ekran klavyesi ile NRF üzerinden metin veya Walkie-Talkie tarzı sesli mesaj gönderimi.
-* *🎮 Oyunlar:* * Singleplayer: Retro klasik oyunlar (Flappy Bird, Snake vb.).
-  * Multiplayer: NRF üzerinden gecikmesiz kablosuz PvP. (Özellikle satranç ve Amiral Battı gibi satır/sütun koordinat mantığıyla çalışan oyunlar).
-* *📁 Dosya Yöneticisi:* SD kart üzerinden .txt okuma, .bmp/.jpg görüntüleme ve .wav formatında ses/müzik çalma.
-* *🛠️ Araçlar:* Wi-Fi analizörü, OpenWeatherMap API ile çalışan tam ekran güncel hava durumu ve not defteri.
-* *⚙️ Ayarlar:* Sessiz Mod aktivasyonu (haptic feedback/titreşim geçişi), Bluetooth hoparlör (A2DP Sink) modu, NRF kanal ayarları, ekran parlaklığı, yazılımsal ses kontrolü ve Tema değiştirici.
+- `lib/espekran`: Saf C++ cekirdek kod. Arduino ve FreeRTOS bagimliligi yoktur.
+- `src`: ESP32/Arduino runtime wiring katmani. Task olusturma, `Serial`, `millis`, pin setup ve demo simulasyon burada kalir.
 
-## 🚀 Gelecek Geliştirmeler / Yapılacaklar (To-Do)
-- [ ] ESP32 pin haritasının (Pinout) kesinleştirilmesi.
-- [ ] Breadboard üzerinde ekran ve NRF modülünün aynı SPI hattında test edilmesi.
-- [ ] FreeRTOS kullanılarak arayüzün (Task 1) ve NRF dinleme işleminin (Task 2) aynı anda çalıştırılması.
-- [ ] 3 Boyutlu yazıcı ile ergonomik bir kasa tasarımının yapılması.
+Temel katmanlar:
+- `app/core`: Uygulama durumu ve `AppController`
+- `ui`: `DeviceState` -> `UiFrame` sunumu
+- `input`: normalize input event modeli
+- `transport/radio`: `RadioTransport` arayuzu ve mock queue mantigi
+- `storage`: depolama arayuzu
+- `power`: power snapshot arayuzu
+- `board/hal`: ESP32'ye ozel glue kod
+
+## Implemented and Validated in Software
+Asagidaki kisimlar yazilim seviyesinde uygulanmis ve bu makinede build ile dogrulanmistir:
+
+- `AppController` ile ekran gecisleri ve mesaj state yonetimi
+- `UiFrame` uretimi ve serial tabanli gorunum modeli
+- `MockRadioTransport` ile kapasite sinirli software queue davranisi
+- `MockPowerManager` ile software power snapshot simulasyonu
+- `platformio run -e esp32dev` ile firmware derlenebilirligi
+
+## Implemented but Hardware-Untested
+Asagidaki kisimlar sadece yazilim olarak modellenmistir. Fiziksel cihazda dogrulanmamistir:
+
+- Serial tabanli UI dongusu
+- FreeRTOS task ayrimi
+- ESP32 pin konfigrasyonu
+- Mock radio akisi
+- Mock battery / weather / connectivity simulasyonu
+- Host-side native test kaynaklari mevcut, ancak bu makinede `gcc/g++` olmadigi icin `platformio test -e native` calistirilamadi
+
+Bu maddeler NRF24L01, TFT, touch, SD veya guc yonetiminin gercek donanimda calistigini kanitlamaz.
+
+## Not Implemented Yet
+- Gercek TFT surucusu
+- Gercek touch input surucusu
+- Gercek NRF24L01 transport entegrasyonu
+- Gercek SD card storage entegrasyonu
+- Gercek audio cikisi
+- Gercek sleep/wake dogrulamasi
+
+## Milestone Checklist
+- [x] PlatformIO + ESP32 firmware iskeleti kuruldu
+- [x] Katmanli core/controller mimarisi kuruldu
+- [x] Host-side native test ortami kuruldu
+- [x] UI ve radio queue testleri eklendi
+- [ ] Gercek display adapter'i eklendi
+- [ ] Gercek input adapter'i eklendi
+- [ ] Gercek radio adapter'i eklendi
+- [ ] Donanim smoke testleri tamamlandi
+
+## API / Arayuzler
+Core ile donanim arasindaki ana sinirlar:
+
+- `Display`
+- `Input`
+- `RadioTransport`
+- `Storage`
+- `Clock`
+- `PowerManager`
+
+Bu arayuzler gelecekteki donanim entegrasyonunun resmi baglanti noktalaridir.
+
+## Kurulum ve Calistirma
+Gereksinim:
+- PlatformIO Core
+
+Derleme:
+
+```powershell
+platformio run -e esp32dev
+```
+
+Host-side test:
+
+```powershell
+platformio test -e native
+```
+
+## Handoff Notlari
+### Where to start
+Ilk bakilacak yerler:
+- `lib/espekran/include/espekran/app/app_controller.h`
+- `lib/espekran/src/app_controller.cpp`
+- `src/main.cpp`
+
+### Known issues
+- README'de anlatilan hedef urun ile mevcut firmware arasinda hala buyuk kapsam farki var.
+- Donanimla ilgili hicbir davranis fiziksel kart uzerinde dogrulanmis degil.
+- Native testleri calistirmak icin host C/C++ derleyicisi gerekli; bu ortamda `gcc/g++` bulunmuyor.
+
+### Decisions made
+- Core kod Arduino ve FreeRTOS'tan ayrildi.
+- Mock davranislar korundu ama acikca simulasyon olarak etiketlendi.
+- Ilk test kapsami timing degil, state dogrulugu odakli secildi.
+
+### Definition of done for the next milestone
+- En az bir gercek donanim adapter'i arayuzlerden birine baglanmis olmali.
+- Build bozulmadan devam etmeli.
+- README, dogrulama durumunu gercekci sekilde yansitmaya devam etmeli.
+
+## Donanim Smoke-Test Checklist
+Fiziksel kart geldiginde ve kablolama hazir oldugunda uygulanacak minimum kontrol listesi:
+
+- Seri portta boot banner gorunuyor mu
+- FreeRTOS task'lari watchdog reset olmadan basliyor mu
+- Wake button pini kararlı okunuyor mu
+- D-Pad ADC degerleri ayrisiyor mu
+- TFT ekran bilinen bir frame gosterebiliyor mu
+- Touch koordinatlari kararlı geliyor mu
+- NRF24L01 iki kart arasinda temel paket gonderip alabiliyor mu
+- SD card mount ve basit dosya okuma calisiyor mu
+- Sleep/wake akisi state bozmadan calisiyor mu
